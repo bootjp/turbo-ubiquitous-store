@@ -1,0 +1,27 @@
+version: "3.7"
+services:
+
+  lvs:
+    image: haproxy
+    ports:
+      - "8080:80"
+
+  master_kvs:
+    image: redis:alpine
+    ports:
+      - "6379"
+
+  slave_kvs:
+    image: redis:alpine
+    ports:
+      - "6380:6379"
+
+  queue-1:
+    image: spotify/kafka
+    ports:
+      - "9092"
+
+  queue-2:
+    image: spotify/kafka
+    ports:
+      - "9093:9092"
