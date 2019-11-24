@@ -5,6 +5,9 @@ services:
     image: haproxy
     ports:
       - "8080:80"
+    volumes:
+      - ./haproxy.cfg:/etc/haproxy/haproxy.cfg
+    command: haproxy -f /etc/haproxy/haproxy.cfg
 
   master_kvs:
     image: redis:alpine
@@ -25,3 +28,4 @@ services:
     image: spotify/kafka
     ports:
       - "9093:9092"
+
