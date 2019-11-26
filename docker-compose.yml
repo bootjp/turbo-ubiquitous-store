@@ -2,7 +2,7 @@ version: "3.7"
 services:
 
   lvs:
-    image: haproxy
+    image: haproxy:latest
     ports:
       - "8080:80"
     volumes:
@@ -29,3 +29,11 @@ services:
     ports:
       - "9093:9092"
 
+  dummy_1:
+    image: nginx
+    ports:
+      - "8000:80"
+  dummy_2:
+    image: nginx
+    ports:
+      - "8000:80"
