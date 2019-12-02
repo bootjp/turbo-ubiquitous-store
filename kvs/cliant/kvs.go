@@ -4,10 +4,8 @@ import (
 	"io"
 	"log"
 	"net"
-	"time"
+	"os"
 )
-
-
 
 func reader(r io.Reader) {
 	buf := make([]byte, 1024)
@@ -19,8 +17,6 @@ func reader(r io.Reader) {
 		println("Client got:", string(buf[0:n]))
 	}
 }
-
-
 
 func main() {
 	c, err := net.Dial("unix", "/tmp/tus.sock")
@@ -38,6 +34,7 @@ func main() {
 			break
 		}
 		println("Client sent:", msg)
-		time.Sleep(1e9)
+		//time.Sleep(1e9)
+		os.Exit(0)
 	}
 }
