@@ -20,14 +20,14 @@ services:
       - "6380:6379"
 
   queue-1:
-    image: spotify/kafka
+    image: redis:alpine
     ports:
-      - "9092"
+      - "63790:6379"
 
   queue-2:
     image: spotify/kafka
     ports:
-      - "9093:9092"
+      - "63791:6379"
 
   dummy_1:
     image: nginx
