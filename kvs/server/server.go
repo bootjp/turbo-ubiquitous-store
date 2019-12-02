@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"net"
 	"os"
@@ -64,9 +63,6 @@ var (
 type MemdCmdQuit int
 
 // Execute disconnect by server.
-func (cmd MemdCmdQuit) Execute(app *App, conn io.Writer) error {
-	return io.EOF
-}
 
 func server(c net.Conn, cache *TUSCache) {
 
@@ -101,16 +97,16 @@ func commandParser(command []byte) (cmd string, err error) {
 		//if len(fields) < 2 {
 		//	return "GET", fmt.Errorf("GET command needs key as second parameter")
 		//}
-		return "SET", nil
+		return "GET", nil
 	case "SET":
 		//if len(fields) < 5 && len(fields) > 3 {
 		//	return "SET", fmt.Errorf("GET command needs key as second parameter")
 		//}
 		return "SET", nil
 	default:
-		return "ERROR", fmt.Errorf("Unknown command: %s")
+		return "ERROR", nil
 	}
-	return "ERROR", fmt.Errorf("Unknown command: %s")
+	return "ERROR", nil
 }
 
 func main() {
