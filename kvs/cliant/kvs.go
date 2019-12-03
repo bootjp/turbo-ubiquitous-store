@@ -34,7 +34,6 @@ func main() {
 			break
 		}
 		println("Client sent:", msg)
-		//time.Sleep(1e9)
 		os.Exit(0)
 	}
 }
