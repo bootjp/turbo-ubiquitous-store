@@ -13,6 +13,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/bootjp/turbo-ubiquitous-store/kvs"
+
 	"github.com/patrickmn/go-cache"
 )
 
@@ -48,7 +50,6 @@ func (t *TUSCache) TUSGet(key string) (string, error) {
 }
 
 var BreakLine = "\r\n"
-
 var (
 	FieldsCommand = 0
 	FieldsKey     = 1
@@ -99,32 +100,34 @@ func server(c net.Conn, cache *TUSCache) {
 	}
 }
 
+func signalHaber(ln net.Listener, c chan os.Signal, queue *kvs.QueueManager) {
+	sig := <-c
+	log.Printf("Caught signal %s: shutting down.", sig)
+	ln.Close()
+	queue.Drain()
+	for queue.Length() != 0 {
+		// waiting queue drain
+	}
+	defer os.Remove("/tmp/tus.sock")
+	os.Exit(0)
+}
 func main() {
 	ln, err := net.Listen("unix", "/tmp/tus.sock")
 	if err != nil {
 		log.Fatal("Listen error: ", err)
 	}
-	defer os.Remove("/tmp/tus.sock")
 
 	sigc := make(chan os.Signal, 1)
 	signal.Notify(sigc, os.Interrupt, syscall.SIGTERM)
-	go func(ln net.Listener, c chan os.Signal) {
-		sig := <-c
-
-		log.Printf("Caught signal %s: shutting down.", sig)
-		ln.Close()
-		// todo enqueue here.
-		os.Exit(0)
-	}(ln, sigc)
+	cache := NewTUSCache()
+	queue := kvs.NewQueueManager()
+	go signalHaber(ln, sigc, queue)
 
 	for {
 		fd, err := ln.Accept()
 		if err != nil {
 			log.Fatal("Accept error: ", err)
 		}
-
-		c := NewTUSCache()
-
-		go server(fd, c)
+		go server(fd, cache)
 	}
 }

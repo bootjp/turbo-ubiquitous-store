@@ -19,12 +19,12 @@ services:
     ports:
       - "6380:6379"
 
-  queue-1:
+  queue_primary:
     image: redis:alpine
     ports:
       - "63790:6379"
 
-  queue-2:
+  queue_secondary:
     image: spotify/kafka
     ports:
       - "63791:6379"
