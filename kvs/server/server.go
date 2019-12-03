@@ -93,19 +93,19 @@ func commandParser(command []byte) (cmd string, err error) {
 	fields := strings.Fields(string(command))
 	switch name := strings.ToUpper(fields[0]); name {
 	case "GET":
-		//atomic.AddInt64(&(app.cmdGet), 1)
-		//if len(fields) < 2 {
-		//	return "GET", fmt.Errorf("GET command needs key as second parameter")
-		//}
+		if len(fields) != 2 {
+			return "GET", fmt.Errorf("GET command needs key as second parameter")
+		}
 		return "GET", nil
 	case "SET":
-		//if len(fields) < 5 && len(fields) > 3 {
-		//	return "SET", fmt.Errorf("GET command needs key as second parameter")
-		//}
+		if len(fields) != 5 {
+			return "SET", fmt.Errorf("SET command needs key as second parameter")
+		}
 		return "SET", nil
 	default:
 		return "ERROR", nil
 	}
+
 	return "ERROR", nil
 }
 
