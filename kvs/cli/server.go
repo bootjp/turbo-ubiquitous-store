@@ -108,13 +108,17 @@ func signalHaber(ln net.Listener, c chan os.Signal, queue *kvs.QueueManager) {
 	for queue.Length() != 0 {
 		// waiting queue drain
 	}
-	defer os.Remove("/tmp/tus.sock")
+	ln.Close()
+	os.Remove(sockPath)
 	os.Exit(0)
 }
+
+var sockPath = "/tmp/tus.sock"
+
 func main() {
-	ln, err := net.Listen("unix", "/tmp/tus.sock")
+	ln, err := net.Listen("unix", sockPath)
 	if err != nil {
-		log.Fatal("Listen error: ", err)
+		log.Fatal(err)
 	}
 
 	sigc := make(chan os.Signal, 1)
