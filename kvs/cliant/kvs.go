@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"io"
 	"log"
 	"net"
@@ -27,13 +28,16 @@ func main() {
 
 	go reader(c)
 	for {
-		msg := "hi"
-		_, err := c.Write([]byte(msg))
-		if err != nil {
-			log.Fatal("Write error:", err)
-			break
+		var sc = bufio.NewScanner(os.Stdin)
+		if sc.Scan() {
+			t := sc.Text()
+			_, err := c.Write([]byte(t + "\r\n"))
+			if err != nil {
+				log.Fatal("Write error:", err)
+				break
+			}
+			println("Client sent:", t)
 		}
-		println("Client sent:", msg)
-		os.Exit(0)
+
 	}
 }

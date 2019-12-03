@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -15,7 +16,7 @@ import (
 	"github.com/patrickmn/go-cache"
 )
 
-var emptyres = []byte("")
+var emptyres = ""
 
 type TUSCache struct {
 	*cache.Cache
@@ -25,92 +26,80 @@ func NewTUSCache() *TUSCache {
 	return &TUSCache{cache.New(100*time.Second, 100*time.Second)}
 }
 
-func (t *TUSCache) TUSSet(key string, data []byte, time time.Duration) bool {
+func (t *TUSCache) TUSSet(key string, data string, time time.Duration) bool {
 	t.Set(key, data, time)
 	return true
 }
 
-func (t *TUSCache) TUSGet(key string) ([]byte, error) {
+var ErrorNotfound = errors.New("not found")
+var ErrorBindMiss = errors.New("bind miss")
+
+func (t *TUSCache) TUSGet(key string) (string, error) {
 	value, ok := t.Get(key)
 
 	if !ok {
-		return emptyres, nil
+		return emptyres, ErrorNotfound
 	}
-	if v, ok := value.([]byte); ok {
+	if v, ok := value.(string); ok {
 		return v, nil
 	}
 
-	return emptyres, errors.New("not found")
+	return emptyres, ErrorBindMiss
 }
 
-// https://github.com/kayac/go-katsubushi/blob/master/app.go#L29-L39
+var BreakLine = "\r\n"
 
 var (
-	respError         = []byte("ERROR\r\n")
-	memdSep           = []byte("\r\n")
-	memdSepLen        = len(memdSep)
-	memdSpc           = []byte(" ")
-	memdGets          = []byte("GETS")
-	memdValue         = []byte("VALUE")
-	memdEnd           = []byte("END")
-	memdValHeader     = []byte("VALUE ")
-	memdValFooter     = []byte("END\r\n")
-	memdStatHeader    = []byte("STAT ")
-	memdVersionHeader = []byte("VERSION ")
+	FieldsCommand = 0
+	FieldsKey     = 1
+	FieldsFlag    = 2
+	FieldsTTL     = 3
+	FieldsSize    = 4
 )
 
-// MemdCmdQuit defines QUIT command.
-type MemdCmdQuit int
-
-// Execute disconnect by server.
-
 func server(c net.Conn, cache *TUSCache) {
-
 	for {
 		bufReader := bufio.NewReader(c)
 		scanner := bufio.NewScanner(bufReader)
 		for scanner.Scan() {
-			commandParser(scanner.Bytes())
-			cache.TUSSet("aa", scanner.Bytes(), 100*time.Second)
-			val, err := cache.TUSGet("aa")
-			//log.Fatal(err)
-			if err != nil {
-				os.Exit(1)
+			fields := strings.Fields(scanner.Text())
+			if len(fields) > 2 {
+				fmt.Println(fields[FieldsCommand], fields[FieldsKey:])
 			}
-			fmt.Printf("%s", val)
+			if len(fields) == 0 {
+				continue
+			}
 
+			switch name := strings.ToUpper(fields[FieldsCommand]); name {
+			case "GET":
+				fmt.Println("find", fields[FieldsKey])
+				val, err := cache.TUSGet(fields[FieldsKey])
+				if err != nil {
+					log.Print(err)
+				}
+				_, err = c.Write([]byte(val + BreakLine))
+				if err != nil {
+					log.Println(err)
+				}
+			case "SET":
+				fmt.Println("get next")
+				scanner.Scan()
+				value := scanner.Text()
+				ttl, err := strconv.Atoi(fields[FieldsTTL])
+				if err != nil {
+					log.Println(err)
+				}
+				fmt.Println("stored", value)
+				cache.TUSSet(fields[1], value, time.Duration(ttl)*time.Second)
+			default:
+				log.Print(fmt.Errorf("UnKnown command %s", name))
+				continue
+			}
 		}
-
 	}
-}
-
-//  https://github.com/kayac/go-katsubushi/blob/master/app.go#L323
-func commandParser(command []byte) (cmd string, err error) {
-	if len(command) == 0 {
-		return
-	}
-
-	fields := strings.Fields(string(command))
-	switch name := strings.ToUpper(fields[0]); name {
-	case "GET":
-		if len(fields) != 2 {
-			return "GET", fmt.Errorf("GET command needs key as second parameter")
-		}
-		return "GET", nil
-	case "SET":
-		if len(fields) != 5 {
-			return "SET", fmt.Errorf("SET command needs key as second parameter")
-		}
-		return "SET", nil
-	default:
-		return "ERROR", nil
-	}
-
-	return "ERROR", nil
 }
 
 func main() {
-
 	ln, err := net.Listen("unix", "/tmp/tus.sock")
 	if err != nil {
 		log.Fatal("Listen error: ", err)
