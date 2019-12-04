@@ -18,8 +18,6 @@ import (
 	"github.com/patrickmn/go-cache"
 )
 
-var emptyres = ""
-
 type TUSCache struct {
 	*cache.Cache
 }
@@ -40,13 +38,13 @@ func (t *TUSCache) TUSGet(key string) (string, error) {
 	value, ok := t.Get(key)
 
 	if !ok {
-		return emptyres, ErrorNotfound
+		return "", ErrorNotfound
 	}
 	if v, ok := value.(string); ok {
 		return v, nil
 	}
 
-	return emptyres, ErrorBindMiss
+	return "", ErrorBindMiss
 }
 
 var BreakLine = "\r\n"
@@ -89,6 +87,7 @@ func server(c net.Conn, cache *TUSCache, queue *kvs.QueueManager, stdlog *log.Lo
 				stdlog.Println("stored", value)
 				cache.TUSSet(fields[1], value, time.Duration(ttl)*time.Second)
 				q := kvs.UpdateQueue{
+					Key:      fields[1],
 					Data:     value,
 					UpdateAt: time.Now().Unix(),
 				}
@@ -106,9 +105,6 @@ func signalHaber(ln net.Listener, c chan os.Signal, queue *kvs.QueueManager) {
 	log.Printf("Caught signal %s: shutting down.", sig)
 	ln.Close()
 	queue.Drain()
-	for queue.Length() != 0 {
-		// waiting queue drain
-	}
 	os.Remove(sockPath)
 	ln.Close()
 	os.Exit(0)
@@ -117,6 +113,8 @@ func signalHaber(ln net.Listener, c chan os.Signal, queue *kvs.QueueManager) {
 var sockPath = "/tmp/tus.sock"
 
 func main() {
+	os.Setenv("PRIMARY_REDIS_HOST", "localhost:63790")
+	os.Setenv("SECONDARY_REDIS_HOST", "localhost:63791")
 	stdlog := log.New(os.Stdout, "", log.Ltime)
 
 	ln, err := net.Listen("unix", sockPath)
@@ -136,5 +134,6 @@ func main() {
 			stdlog.Fatalln("Accept error: ", err)
 		}
 		go server(fd, cache, queue, stdlog)
+		go queue.Dequeue()
 	}
 }
