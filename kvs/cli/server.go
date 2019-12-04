@@ -58,42 +58,43 @@ var (
 	FieldsSize    = 4
 )
 
-func server(c net.Conn, cache *TUSCache) {
+func server(c net.Conn, cache *TUSCache, queue *kvs.QueueManager, stdlog *log.Logger) {
 	for {
 		bufReader := bufio.NewReader(c)
 		scanner := bufio.NewScanner(bufReader)
 		for scanner.Scan() {
 			fields := strings.Fields(scanner.Text())
-			if len(fields) > 2 {
-				fmt.Println(fields[FieldsCommand], fields[FieldsKey:])
-			}
 			if len(fields) == 0 {
 				continue
 			}
 
 			switch name := strings.ToUpper(fields[FieldsCommand]); name {
 			case "GET":
-				fmt.Println("find", fields[FieldsKey])
 				val, err := cache.TUSGet(fields[FieldsKey])
 				if err != nil {
-					log.Print(err)
+					stdlog.Println(err)
 				}
 				_, err = c.Write([]byte(val + BreakLine))
 				if err != nil {
-					log.Println(err)
+					stdlog.Println(err)
 				}
 			case "SET":
-				fmt.Println("get next")
 				scanner.Scan()
 				value := scanner.Text()
 				ttl, err := strconv.Atoi(fields[FieldsTTL])
 				if err != nil {
-					log.Println(err)
+					stdlog.Println(err)
 				}
-				fmt.Println("stored", value)
+
+				stdlog.Println("stored", value)
 				cache.TUSSet(fields[1], value, time.Duration(ttl)*time.Second)
+				q := kvs.UpdateQueue{
+					Data:     value,
+					UpdateAt: time.Now().Unix(),
+				}
+				queue.Enqueue(q)
 			default:
-				log.Print(fmt.Errorf("UnKnown command %s", name))
+				stdlog.Println(fmt.Errorf("UnSupport command %s", name))
 				continue
 			}
 		}
@@ -108,17 +109,19 @@ func signalHaber(ln net.Listener, c chan os.Signal, queue *kvs.QueueManager) {
 	for queue.Length() != 0 {
 		// waiting queue drain
 	}
-	ln.Close()
 	os.Remove(sockPath)
+	ln.Close()
 	os.Exit(0)
 }
 
 var sockPath = "/tmp/tus.sock"
 
 func main() {
+	stdlog := log.New(os.Stdout, "", log.Ltime)
+
 	ln, err := net.Listen("unix", sockPath)
 	if err != nil {
-		log.Fatal(err)
+		stdlog.Fatalln(err)
 	}
 
 	sigc := make(chan os.Signal, 1)
@@ -130,8 +133,8 @@ func main() {
 	for {
 		fd, err := ln.Accept()
 		if err != nil {
-			log.Fatal("Accept error: ", err)
+			stdlog.Fatalln("Accept error: ", err)
 		}
-		go server(fd, cache)
+		go server(fd, cache, queue, stdlog)
 	}
 }
