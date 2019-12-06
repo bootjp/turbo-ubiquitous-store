@@ -77,6 +77,7 @@ func server(c net.Conn, cache *TUSCache, queue *kvs.QueueManager, stdlog *log.Lo
 					stdlog.Println(err)
 				}
 			case "SET":
+				// todo add validate not enough commands length
 				scanner.Scan()
 				value := scanner.Text()
 				ttl, err := strconv.Atoi(fields[FieldsTTL])
@@ -110,7 +111,7 @@ func signalHaber(ln net.Listener, c chan os.Signal, queue *kvs.QueueManager) {
 	os.Exit(0)
 }
 
-var sockPath = "/tmp/tus.sock"
+const sockPath = "/tmp/tus.sock"
 
 func main() {
 	os.Setenv("PRIMARY_REDIS_HOST", "localhost:63790")

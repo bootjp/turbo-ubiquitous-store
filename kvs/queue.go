@@ -60,6 +60,8 @@ func (q *QueueManager) Length() int {
 	return len(q.Queue)
 }
 
+const updateQueueKey = "tus_queue"
+
 func (q *QueueManager) Forward() {
 	for {
 		q.log.Println("queue current", len(q.Queue))
@@ -77,17 +79,17 @@ func (q *QueueManager) Forward() {
 			continue
 		}
 		q.mutex.Lock()
-		data := q.Queue[0]
 
-		jsonBytes, err := json.Marshal(data)
+		jsonBytes, err := json.Marshal(q.Queue[0])
 		if err != nil {
 			fmt.Println("JSON Marshal error:", err)
 		}
-		_, err = q.QueuePrimary.Do("LPUSH", "tus_queue", string(jsonBytes))
+		data := string(jsonBytes)
+		_, err = q.QueuePrimary.Do("LPUSH", updateQueueKey, data)
 		if err != nil {
 			log.Println(err)
 		}
-		_, err = q.QueueSecondary.Do("LPUSH", "tus_queue", string(jsonBytes))
+		_, err = q.QueueSecondary.Do("LPUSH", updateQueueKey, data)
 		if err != nil {
 			log.Println(err)
 		}
