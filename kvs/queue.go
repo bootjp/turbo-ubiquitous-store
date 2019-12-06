@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"sync"
 	"time"
@@ -15,14 +16,19 @@ type QueueManager struct {
 	QueuePrimary   redis.Conn
 	QueueSecondary redis.Conn
 	Queue          []UpdateQueue
+	NextNode       *NextNode // Next node when replacing kvs node
 	mutex          *sync.Mutex
 	draining       bool
 	executeDequeue bool
+	log            *log.Logger
 }
+type NextNode struct {
+	Host net.TCPAddr
+}
+
 type QueueManagerI interface {
 	Enqueue(u UpdateQueue)
-	Drain() bool
-	Dequeue()
+	Forward()
 }
 
 func NewQueueManager() *QueueManager {
@@ -42,17 +48,22 @@ func NewQueueManager() *QueueManager {
 		QueuePrimary:   pconn,
 		QueueSecondary: sconn,
 		Queue:          make([]UpdateQueue, 0),
+		NextNode:       nil,
 		mutex:          &sync.Mutex{},
+		log:            log.New(os.Stdout, "queue_manager", log.Ltime),
 	}
 }
 
-func (q *QueueManager) Dequeue() {
-	fmt.Println("welcome deque")
+func (q *QueueManager) Length() int {
+	q.mutex.Lock()
+	defer q.mutex.Unlock()
+	return len(q.Queue)
+}
+
+func (q *QueueManager) Forward() {
 	for {
-		fmt.Println("queue current", len(q.Queue))
-		q.mutex.Lock()
-		if len(q.Queue) == 0 {
-			q.mutex.Unlock()
+		q.log.Println("queue current", len(q.Queue))
+		if q.Length() == 0 {
 			_, err := q.QueuePrimary.Do("PING")
 			if err != nil {
 				log.Println(err)
@@ -62,11 +73,10 @@ func (q *QueueManager) Dequeue() {
 				log.Println(err)
 			}
 			time.Sleep(1 * time.Second)
-			fmt.Println("continue wait queue")
+			q.log.Println("continue wait queue")
 			continue
 		}
-		fmt.Println("dequeue")
-
+		q.mutex.Lock()
 		data := q.Queue[0]
 
 		jsonBytes, err := json.Marshal(data)
@@ -91,17 +101,6 @@ func (q *QueueManager) Enqueue(u UpdateQueue) {
 	q.mutex.Lock()
 	defer q.mutex.Unlock()
 	q.Queue = append(q.Queue, u)
-	fmt.Println(q.Queue)
-}
-
-func (q *QueueManager) Drain() bool {
-	if !q.draining {
-		return false
-	}
-	q.mutex.Lock()
-	defer q.mutex.Unlock()
-	q.draining = true
-	return true
 }
 
 type UpdateQueue struct {

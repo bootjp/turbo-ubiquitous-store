@@ -104,7 +104,7 @@ func signalHaber(ln net.Listener, c chan os.Signal, queue *kvs.QueueManager) {
 	sig := <-c
 	log.Printf("Caught signal %s: shutting down.", sig)
 	ln.Close()
-	queue.Drain()
+	// next node transfer data
 	os.Remove(sockPath)
 	ln.Close()
 	os.Exit(0)
@@ -134,6 +134,6 @@ func main() {
 			stdlog.Fatalln("Accept error: ", err)
 		}
 		go server(fd, cache, queue, stdlog)
-		go queue.Dequeue()
+		go queue.Forward()
 	}
 }
