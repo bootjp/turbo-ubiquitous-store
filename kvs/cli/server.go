@@ -116,7 +116,7 @@ const sockPath = "/tmp/tus.sock"
 func main() {
 	os.Setenv("PRIMARY_REDIS_HOST", "localhost:63790")
 	os.Setenv("SECONDARY_REDIS_HOST", "localhost:63791")
-	stdlog := log.New(os.Stdout, "", log.Ltime)
+	stdlog := log.New(os.Stdout, "front_kvs: ", log.Ltime)
 
 	ln, err := net.Listen("unix", sockPath)
 	if err != nil {

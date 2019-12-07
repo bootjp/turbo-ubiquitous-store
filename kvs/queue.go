@@ -50,7 +50,7 @@ func NewQueueManager() *QueueManager {
 		Queue:          make([]UpdateQueue, 0),
 		NextNode:       nil,
 		mutex:          &sync.Mutex{},
-		log:            log.New(os.Stdout, "queue_manager", log.Ltime),
+		log:            log.New(os.Stdout, "queue_manager: ", log.Ltime),
 	}
 }
 

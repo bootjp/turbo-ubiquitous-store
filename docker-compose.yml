@@ -12,7 +12,7 @@ services:
   master_kvs:
     image: redis:alpine
     ports:
-      - "6379"
+      - "6379:6379"
 
   slave_kvs:
     image: redis:alpine
