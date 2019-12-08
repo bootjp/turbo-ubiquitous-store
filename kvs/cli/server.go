@@ -68,6 +68,10 @@ func server(c net.Conn, cache *TUSCache, queue *kvs.QueueManager, stdlog *log.Lo
 
 			switch name := strings.ToUpper(fields[FieldsCommand]); name {
 			case "GET":
+				if len(fields) != 2 {
+					stdlog.Println("invalid command")
+					continueghit
+				}
 				val, err := cache.TUSGet(fields[FieldsKey])
 				if err != nil {
 					stdlog.Println(err)
@@ -77,7 +81,10 @@ func server(c net.Conn, cache *TUSCache, queue *kvs.QueueManager, stdlog *log.Lo
 					stdlog.Println(err)
 				}
 			case "SET":
-				// todo add validate not enough commands length
+				if len(fields) != 4 {
+					stdlog.Println("invalid command")
+					continue
+				}
 				scanner.Scan()
 				value := scanner.Text()
 				ttl, err := strconv.Atoi(fields[FieldsTTL])
