@@ -112,7 +112,14 @@ func signalHaber(ln net.Listener, c chan os.Signal, queue *kvs.QueueManager) {
 	sig := <-c
 	log.Printf("Caught signal %s: shutting down.", sig)
 	ln.Close()
-	// next node transfer data
+	//todo backlog: next node transfer data
+	for trid := 0; queue.Length() > 0; trid++ {
+		log.Println("waiting dequeue")
+		time.Sleep(10 * time.Second)
+		if trid > 20 {
+			log.Fatal("fail deque sequence tried max")
+		}
+	}
 	os.Remove(sockPath)
 	ln.Close()
 	os.Exit(0)
