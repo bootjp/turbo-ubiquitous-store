@@ -70,7 +70,7 @@ func server(c net.Conn, cache *TUSCache, queue *kvs.QueueManager, stdlog *log.Lo
 			case "GET":
 				if len(fields) != 2 {
 					stdlog.Println("invalid command")
-					continueghit
+					continue
 				}
 				val, err := cache.TUSGet(fields[FieldsKey])
 				if err != nil {
