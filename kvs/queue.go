@@ -2,7 +2,6 @@ package kvs
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net"
 	"os"
@@ -82,7 +81,7 @@ func (q *QueueManager) Forward() {
 
 		jsonBytes, err := json.Marshal(q.Queue[0])
 		if err != nil {
-			fmt.Println("JSON Marshal error:", err)
+			log.Println("JSON Marshal error:", err)
 		}
 		data := string(jsonBytes)
 		_, err = q.QueuePrimary.Do("LPUSH", updateQueueKey, data)
