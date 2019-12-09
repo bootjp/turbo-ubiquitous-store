@@ -81,8 +81,8 @@ func server(c net.Conn, cache *TUSCache, queue *kvs.QueueManager, stdlog *log.Lo
 					stdlog.Println(err)
 				}
 			case "SET":
-				if len(fields) != 4 {
-					stdlog.Println("invalid command")
+				if len(fields) != 5 {
+					stdlog.Println("invalid command", fields, len(fields))
 					continue
 				}
 				scanner.Scan()
