@@ -1,12 +1,11 @@
 version: "3.7"
 services:
-
   lvs:
     image: haproxy:latest
     ports:
       - "8080:80"
     volumes:
-      - ./:/usr/local/etc/haproxy/
+      - ./lvs/config/:/usr/local/etc/haproxy/
     command: haproxy -f /usr/local/etc/haproxy/haproxy.cfg
 
   master_kvs:
