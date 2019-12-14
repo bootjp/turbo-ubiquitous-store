@@ -146,8 +146,7 @@ func main() {
 	cache := NewTUSCache()
 	queue := kvs.NewQueueManager()
 	go signalHaber(ln, sigc, queue)
-	q, s := make(chan bool, 1), make(chan bool, 1)
-	go queue.Forward(q, s)
+	go queue.Forward()
 
 	for {
 		fd, err := ln.Accept()
