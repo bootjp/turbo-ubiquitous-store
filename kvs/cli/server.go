@@ -47,10 +47,11 @@ func (t *TUSCache) TUSGet(key string) (string, error) {
 	return "", ErrorBindMiss
 }
 
-var BreakLine = "\r\n"
-var Stored = "STORED" + BreakLine
-var End = "END" + BreakLine
-var (
+const BreakLine = "\r\n"
+const Stored = "STORED\r\n"
+const End = "END\r\n"
+
+const (
 	FieldsCommand = 0
 	FieldsKey     = 1
 	FieldsFlag    = 2
