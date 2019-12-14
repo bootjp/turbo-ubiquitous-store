@@ -48,6 +48,8 @@ func (t *TUSCache) TUSGet(key string) (string, error) {
 }
 
 var BreakLine = "\r\n"
+var Stored = "STORED" + BreakLine
+var End = "END" + BreakLine
 var (
 	FieldsCommand = 0
 	FieldsKey     = 1
@@ -72,11 +74,12 @@ func server(c net.Conn, cache *TUSCache, queue *kvs.QueueManager, stdlog *log.Lo
 					stdlog.Println("invalid command")
 					continue
 				}
-				val, err := cache.TUSGet(fields[FieldsKey])
+				key := fields[FieldsKey]
+				val, err := cache.TUSGet(key)
 				if err != nil {
 					stdlog.Println(err)
 				}
-				_, err = c.Write([]byte("VALUE " + fields[FieldsKey] + " 0 " + strconv.Itoa(len(val)) + BreakLine + val + BreakLine + "END" + BreakLine))
+				_, err = c.Write([]byte("VALUE " + key + " 0 " + strconv.Itoa(len(val)) + BreakLine + val + BreakLine + End))
 				if err != nil {
 					stdlog.Println(err)
 				}
@@ -92,18 +95,17 @@ func server(c net.Conn, cache *TUSCache, queue *kvs.QueueManager, stdlog *log.Lo
 					stdlog.Println(err)
 				}
 
-				stdlog.Println("stored", value)
 				cache.TUSSet(fields[1], value, time.Duration(ttl)*time.Second)
+				_, err = c.Write([]byte(Stored))
+				if err != nil {
+					stdlog.Println(err)
+				}
 				q := kvs.UpdateQueue{
 					Key:      fields[1],
 					Data:     value,
 					UpdateAt: time.Now().Unix(),
 				}
 				queue.Enqueue(q)
-				_, err = c.Write([]byte("STORED" + BreakLine))
-				if err != nil {
-					stdlog.Println(err)
-				}
 			default:
 				stdlog.Println(fmt.Errorf("UnSupport command %s", name))
 				continue
