@@ -137,11 +137,17 @@ func main() {
 		stdlog.Fatalln(err)
 	}
 
+	if err := os.Chmod(sockPath, 0700); err != nil {
+		log.Printf("error: %v\n", err)
+		return
+	}
 	sigc := make(chan os.Signal, 1)
 	signal.Notify(sigc, os.Interrupt, syscall.SIGTERM)
 	cache := NewTUSCache()
 	queue := kvs.NewQueueManager()
 	go signalHaber(ln, sigc, queue)
+	q, s := make(chan bool, 1), make(chan bool, 1)
+	go queue.Forward(q, s)
 
 	for {
 		fd, err := ln.Accept()
@@ -149,6 +155,5 @@ func main() {
 			stdlog.Fatalln("Accept error: ", err)
 		}
 		go server(fd, cache, queue, stdlog)
-		go queue.Forward()
 	}
 }
