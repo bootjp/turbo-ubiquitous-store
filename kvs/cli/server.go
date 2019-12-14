@@ -76,7 +76,7 @@ func server(c net.Conn, cache *TUSCache, queue *kvs.QueueManager, stdlog *log.Lo
 				if err != nil {
 					stdlog.Println(err)
 				}
-				_, err = c.Write([]byte(val + BreakLine))
+				_, err = c.Write([]byte("VALUE " + fields[FieldsKey] + " 0 " + strconv.Itoa(len(val)) + BreakLine + val + BreakLine + "END" + BreakLine))
 				if err != nil {
 					stdlog.Println(err)
 				}
@@ -100,6 +100,10 @@ func server(c net.Conn, cache *TUSCache, queue *kvs.QueueManager, stdlog *log.Lo
 					UpdateAt: time.Now().Unix(),
 				}
 				queue.Enqueue(q)
+				_, err = c.Write([]byte("STORED" + BreakLine))
+				if err != nil {
+					stdlog.Println(err)
+				}
 			default:
 				stdlog.Println(fmt.Errorf("UnSupport command %s", name))
 				continue
