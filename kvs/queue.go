@@ -57,13 +57,13 @@ func (q *QueueManager) Length() int {
 	q.mutex.Lock()
 	defer q.mutex.Unlock()
 	return len(q.Queue)
+
 }
 
 const updateQueueKey = "tus_queue"
 
 func (q *QueueManager) Forward() {
 	for {
-		q.log.Println("queue current", len(q.Queue))
 		if q.Length() == 0 {
 			_, err := q.QueuePrimary.Do("PING")
 			if err != nil {
@@ -100,8 +100,8 @@ func (q *QueueManager) Forward() {
 
 func (q *QueueManager) Enqueue(u UpdateQueue) {
 	q.mutex.Lock()
-	defer q.mutex.Unlock()
 	q.Queue = append(q.Queue, u)
+	q.mutex.Unlock()
 }
 
 type UpdateQueue struct {

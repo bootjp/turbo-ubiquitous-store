@@ -9,22 +9,22 @@ services:
     command: haproxy -f /usr/local/etc/haproxy/haproxy.cfg
 
   master_kvs:
-    image: redis:alpine
+    image: eqalpha/keydb
     ports:
       - "6379:6379"
 
   slave_kvs:
-    image: redis:alpine
+    image: eqalpha/keydb
     ports:
       - "6380:6379"
 
   queue_primary:
-    image: redis:alpine
+    image: eqalpha/keydb
     ports:
       - "63790:6379"
 
   queue_secondary:
-    image: redis:alpine
+    image: eqalpha/keydb
     ports:
       - "63791:6379"
 

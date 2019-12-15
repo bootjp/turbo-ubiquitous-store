@@ -48,15 +48,18 @@ func (t *TUSCache) TUSGet(key string) (string, error) {
 }
 
 const BreakLine = "\r\n"
-const Stored = "STORED\r\n"
-const End = "END\r\n"
+const Stored = "STORED" + BreakLine
+const End = "END" + BreakLine
+const ValueFormat = "VALUE %s 0 %d" + BreakLine + "%s" + BreakLine + End
+
+var storedRes = []byte(Stored)
 
 const (
-	FieldsCommand = 0
-	FieldsKey     = 1
-	FieldsFlag    = 2
-	FieldsTTL     = 3
-	FieldsSize    = 4
+	FieldsCommand = iota
+	FieldsKey
+	FieldsFlag
+	FieldsTTL
+	FieldsSize
 )
 
 func server(c net.Conn, cache *TUSCache, queue *kvs.QueueManager, stdlog *log.Logger) {
@@ -80,7 +83,7 @@ func server(c net.Conn, cache *TUSCache, queue *kvs.QueueManager, stdlog *log.Lo
 				if err != nil {
 					stdlog.Println(err)
 				}
-				_, err = c.Write([]byte("VALUE " + key + " 0 " + strconv.Itoa(len(val)) + BreakLine + val + BreakLine + End))
+				_, err = c.Write([]byte(fmt.Sprintf(ValueFormat, key, len(val), val)))
 				if err != nil {
 					stdlog.Println(err)
 				}
@@ -97,7 +100,7 @@ func server(c net.Conn, cache *TUSCache, queue *kvs.QueueManager, stdlog *log.Lo
 				}
 
 				cache.TUSSet(fields[1], value, time.Duration(ttl)*time.Second)
-				_, err = c.Write([]byte(Stored))
+				_, err = c.Write(storedRes)
 				if err != nil {
 					stdlog.Println(err)
 				}
@@ -158,7 +161,8 @@ func main() {
 	for {
 		fd, err := ln.Accept()
 		if err != nil {
-			stdlog.Fatalln("Accept error: ", err)
+			stdlog.Println("Accept error: ", err)
+			continue
 		}
 		go server(fd, cache, queue, stdlog)
 	}
