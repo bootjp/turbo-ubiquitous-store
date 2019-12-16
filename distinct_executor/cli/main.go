@@ -123,14 +123,7 @@ func (n *QueueNodes) Execute(m *MasterNode) {
 	}
 }
 
-var debug = true
-
 func main() {
-	if debug {
-		os.Setenv("PRIMARY_REDIS_HOST", "localhost:63790")
-		os.Setenv("SECONDARY_REDIS_HOST", "localhost:63791")
-		os.Setenv("MASTER_REDIS_HOST", "localhost:6379")
-	}
 
 	mconn, err := redis.Dial("tcp", os.Getenv("MASTER_REDIS_HOST"))
 	if err != nil {

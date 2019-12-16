@@ -5,7 +5,7 @@ services:
     ports:
       - "8080:80"
     volumes:
-      - ./lvs/config/:/usr/local/etc/haproxy/
+      - ./loadbalancer/config/:/usr/local/etc/haproxy/
     command: haproxy -f /usr/local/etc/haproxy/haproxy.cfg
 
   master_kvs:
