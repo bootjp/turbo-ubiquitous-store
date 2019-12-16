@@ -81,16 +81,16 @@ func (q *QueueManager) Forward() {
 
 		jsonBytes, err := json.Marshal(q.Queue[0])
 		if err != nil {
-			log.Println("JSON Marshal error:", err)
+			q.log.Println("JSON Marshal error:", err)
 		}
 		data := string(jsonBytes)
 		_, err = q.QueuePrimary.Do("LPUSH", updateQueueKey, data)
 		if err != nil {
-			log.Println(err)
+			q.log.Println(err)
 		}
 		_, err = q.QueueSecondary.Do("LPUSH", updateQueueKey, data)
 		if err != nil {
-			log.Println(err)
+			q.log.Println(err)
 		}
 
 		q.Queue = q.Queue[1:]

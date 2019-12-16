@@ -13,9 +13,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/bootjp/turbo-ubiquitous-store/kvs"
+	"github.com/akyoto/cache"
 
-	"github.com/patrickmn/go-cache"
+	"github.com/bootjp/turbo-ubiquitous-store/kvs"
 )
 
 type TUSCache struct {
@@ -23,7 +23,7 @@ type TUSCache struct {
 }
 
 func NewTUSCache() *TUSCache {
-	return &TUSCache{cache.New(100*time.Second, 100*time.Second)}
+	return &TUSCache{cache.New(5 * time.Minute)}
 }
 
 func (t *TUSCache) TUSSet(key string, data string, time time.Duration) bool {
@@ -40,11 +40,8 @@ func (t *TUSCache) TUSGet(key string) (string, error) {
 	if !ok {
 		return "", ErrorNotfound
 	}
-	if v, ok := value.(string); ok {
-		return v, nil
-	}
 
-	return "", ErrorBindMiss
+	return fmt.Sprintf("%v", value), ErrorBindMiss
 }
 
 const BreakLine = "\r\n"
@@ -80,7 +77,7 @@ func server(c net.Conn, cache *TUSCache, queue *kvs.QueueManager, stdlog *log.Lo
 				}
 				key := fields[FieldsKey]
 				val, err := cache.TUSGet(key)
-				if err != nil {
+				if err != nil && err != ErrorNotfound {
 					stdlog.Println(err)
 				}
 				_, err = c.Write([]byte(fmt.Sprintf(ValueFormat, key, len(val), val)))

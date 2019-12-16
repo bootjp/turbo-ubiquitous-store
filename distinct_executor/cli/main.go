@@ -119,7 +119,6 @@ func (n *QueueNodes) Execute(m *MasterNode) {
 			log.Println(err)
 		}
 
-		log.Println("dequeue and store", ptr)
 	}
 }
 
