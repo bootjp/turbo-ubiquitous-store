@@ -28,12 +28,3 @@ services:
     ports:
       - "63791:6379"
 
-  dummy_1:
-    image: nginx
-    ports:
-      - "8888:80"
-
-  dummy_2:
-    image: nginx
-    ports:
-      - "8800:80"
