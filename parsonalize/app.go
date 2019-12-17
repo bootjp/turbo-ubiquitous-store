@@ -30,30 +30,44 @@ func main() {
 			fmt.Println(err)
 		}
 
-		cmd := fmt.Sprintf("GET %s\r￿\n", uid)
-		_, err = conn.Write([]byte(cmd))
+		cmd := fmt.Sprintf("GET %s", uid)
+		fmt.Println(cmd)
+		_, err = conn.Write([]byte(cmd + "\r\n"))
 		if err != nil {
 			fmt.Println(err)
 		}
 
-		var response = make([]byte, 100)
+		var response = make([]byte, len("VALUE 1"))
 		_, err = conn.Read(response)
 		if err != nil {
 			fmt.Println(err)
 		}
+		fmt.Println("response", response)
+		if string(response) == "" {
+			response = []byte("0")
+		}
 
-		val, err := strconv.Atoi(string(response))
+		val, err := strconv.Atoi(string(response[6:]))
 		if err != nil {
 			fmt.Println(err)
 		}
+		fmt.Println("num", val)
 		val++
-		cmd = fmt.Sprintf("SET %s 50 10000 50\r\n%d\r\n", uid, val)
-		_, err = conn.Write([]byte(cmd))
+		fmt.Println(uid)
+		fmt.Println("SET " + uid + " 1676598712 1676598712 1676598712\r\n" + string(val) + "\r\n")
+
+		fmt.Println(cmd)
+
+		_, err = conn.Write([]byte("SET " + uid + " 1676598712 1676598712 1676598712\r\n" + strconv.Itoa(val) + "\r\n"))
 		if err != nil {
 			fmt.Println(err)
 		}
 
-		ctx.Response.SetBodyString(string(val))
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		ctx.Response.SetBody(response)
 	}
 
 	fasthttp.ListenAndServe(":7779", m)
