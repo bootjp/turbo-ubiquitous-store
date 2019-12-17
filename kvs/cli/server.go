@@ -206,6 +206,7 @@ func main() {
 	if err != nil {
 		stdlog.Fatalln(err)
 	}
+	defer os.Remove(sockPath)
 
 	if err := os.Chmod(sockPath, 0700); err != nil {
 		log.Printf("error: %v\n", err)
