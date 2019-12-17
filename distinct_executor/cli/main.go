@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/bootjp/turbo-ubiquitous-store/kvs"
-
 	"github.com/gomodule/redigo/redis"
 )
 

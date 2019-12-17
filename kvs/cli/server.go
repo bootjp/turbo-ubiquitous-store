@@ -10,22 +10,87 @@ import (
 	"os/signal"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
 	"github.com/akyoto/cache"
+	"github.com/gomodule/redigo/redis"
 
 	"github.com/bootjp/turbo-ubiquitous-store/kvs"
 )
 
 type TUSCache struct {
 	*cache.Cache
+	log         *log.Logger
+	refreshInit bool
+	refreshLock *sync.Mutex
 }
 
 func NewTUSCache() *TUSCache {
-	return &TUSCache{cache.New(5 * time.Minute)}
+	t := &TUSCache{
+		cache.New(1 * time.Hour),
+		log.New(os.Stdout, "tuscache: ", log.Ltime),
+		false,
+		&sync.Mutex{},
+	}
+	t.LoadCache()
+	return t
 }
 
+// load cache
+func (t *TUSCache) LoadCache() {
+	sconn, err := redis.Dial("tcp", os.Getenv("SLAVE_REDIS_HOST"))
+	if err != nil {
+		t.log.Println(sconn)
+	}
+
+	str, err := redis.Strings(sconn.Do("KEYS", "*"))
+	if err != nil {
+		t.log.Println(err)
+	}
+	for _, k := range str {
+		v, err := redis.String(sconn.Do("GET", k))
+		if err != nil {
+			t.log.Println(err)
+		}
+		t.TUSSet(k, v, 1*time.Hour)
+	}
+
+}
+
+// refrech cache with backend storage
+func (t *TUSCache) RefreshCache() {
+	t.refreshLock.Lock()
+	defer t.refreshLock.Unlock()
+	if t.refreshInit {
+		return
+	}
+
+	t.refreshInit = true
+	go func() {
+		for {
+			sconn, err := redis.Dial("tcp", os.Getenv("SLAVE_REDIS_HOST"))
+			if err != nil {
+				t.log.Println(sconn)
+			}
+
+			str, err := redis.Strings(sconn.Do("KEYS", "*"))
+			if err != nil {
+				t.log.Println(err)
+			}
+			for _, k := range str {
+				v, err := redis.String(sconn.Do("GET", k))
+				if err != nil {
+					t.log.Println(err)
+				}
+				t.TUSSet(k, v, 1*time.Hour)
+			}
+
+			time.Sleep(10 * time.Minute)
+		}
+	}()
+}
 func (t *TUSCache) TUSSet(key string, data string, time time.Duration) bool {
 	t.Set(key, data, time)
 	return true

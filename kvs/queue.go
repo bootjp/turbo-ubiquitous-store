@@ -1,7 +1,6 @@
 package kvs
 
 import (
-	"encoding/json"
 	"log"
 	"net"
 	"os"
@@ -9,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gomodule/redigo/redis"
+	"github.com/json-iterator/go"
 )
 
 type QueueManager struct {
@@ -29,6 +29,8 @@ type QueueManagerI interface {
 	Enqueue(u UpdateQueue)
 	Forward()
 }
+
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 func NewQueueManager() *QueueManager {
 	pconn, err := redis.Dial("tcp", os.Getenv("PRIMARY_REDIS_HOST"))
