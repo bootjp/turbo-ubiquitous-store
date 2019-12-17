@@ -41,7 +41,7 @@ func (t *TUSCache) TUSGet(key string) (string, error) {
 		return "", ErrorNotfound
 	}
 
-	return fmt.Sprintf("%v", value), ErrorBindMiss
+	return fmt.Sprintf("%v", value), nil
 }
 
 const BreakLine = "\r\n"
