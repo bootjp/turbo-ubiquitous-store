@@ -36,23 +36,23 @@ func incHandler(ctx *fasthttp.RequestCtx, mc *memcache.Client) {
 
 	i, err := mc.Get(uid)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
-	if bytes.Equal(i.Value, []byte("")) {
+	if i.Value == nil || bytes.Equal(i.Value, []byte("")) {
 		i.Value = []byte("1")
 	}
 
 	strint := fmt.Sprintf("%s", i.Value)
 	ints, err := strconv.Atoi(strint)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 
 	ints++
 	mc.Set(&memcache.Item{Key: uid, Value: []byte(strconv.Itoa(ints)), Expiration: 0})
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 
 	ctx.Response.SetBodyString(strconv.Itoa(ints))
