@@ -103,6 +103,7 @@ func (n *QueueNodes) Execute(m *MasterNode) {
 
 		if qcount == 0 {
 			time.Sleep(1 * time.Second)
+			log.Println("distinct executor waiting queue")
 			continue
 		}
 		byte, err := redis.Bytes(n.ActiveNode.Conn.Do("RPOP", updateQueueKey))
