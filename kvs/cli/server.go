@@ -97,7 +97,6 @@ func (t *TUSCache) TUSSet(key string, data string, time time.Duration) bool {
 }
 
 var ErrorNotfound = errors.New("not found")
-var ErrorBindMiss = errors.New("bind miss")
 
 func (t *TUSCache) TUSGet(key string) (string, error) {
 	value, ok := t.Get(key)
@@ -137,7 +136,7 @@ func server(c net.Conn, cache *TUSCache, queue *kvs.QueueManager, stdlog *log.Lo
 			switch name := strings.ToUpper(fields[FieldsCommand]); name {
 			case "GET":
 				if len(fields) != 2 {
-					stdlog.Println("invalid command")
+					stdlog.Printf("invalid command %v \n", fields)
 					continue
 				}
 				key := fields[FieldsKey]
@@ -151,7 +150,7 @@ func server(c net.Conn, cache *TUSCache, queue *kvs.QueueManager, stdlog *log.Lo
 				}
 			case "SET":
 				if len(fields) != 5 {
-					stdlog.Println("invalid command", fields, len(fields))
+					stdlog.Printf("invalid command %v \n", fields)
 					continue
 				}
 				scanner.Scan()
@@ -173,7 +172,7 @@ func server(c net.Conn, cache *TUSCache, queue *kvs.QueueManager, stdlog *log.Lo
 				}
 				queue.Enqueue(q)
 			default:
-				stdlog.Println(fmt.Errorf("UnSupport command %s", name))
+				stdlog.Println(fmt.Errorf("UnSupport command %v", fields))
 				continue
 			}
 		}

@@ -75,22 +75,22 @@ func (q *QueueManager) Forward() {
 			if err != nil {
 				log.Println(err)
 			}
-			time.Sleep(1 * time.Second)
+			time.Sleep(1 * time.Minute)
 			q.log.Println("continue wait queue")
 			continue
 		}
 		q.mutex.Lock()
 
-		jsonBytes, err := json.Marshal(q.Queue[0])
+		json, err := json.MarshalToString(q.Queue[0])
 		if err != nil {
 			q.log.Println("JSON Marshal error:", err)
 		}
-		data := string(jsonBytes)
-		_, err = q.QueuePrimary.Do("LPUSH", updateQueueKey, data)
+
+		_, err = q.QueuePrimary.Do("LPUSH", updateQueueKey, json)
 		if err != nil {
 			q.log.Println(err)
 		}
-		_, err = q.QueueSecondary.Do("LPUSH", updateQueueKey, data)
+		_, err = q.QueueSecondary.Do("LPUSH", updateQueueKey, json)
 		if err != nil {
 			q.log.Println(err)
 		}

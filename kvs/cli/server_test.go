@@ -49,6 +49,7 @@ func TestCommand(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			var response = make([]byte, len("example"))
 			_, err = conn.Read(response)
 			t.Log("ddd")

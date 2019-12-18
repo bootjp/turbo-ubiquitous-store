@@ -36,27 +36,32 @@ func main() {
 		if err != nil {
 			fmt.Println(err)
 		}
+		var meta = make([]byte, len(fmt.Sprintf("VALUE %s 0 x", uid)))
+		_, err = conn.Read(meta)
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Printf("meta: %s\n", meta)
 
-		var response = make([]byte, len("VALUE 1"))
+		var response = make([]byte, 1)
 		_, err = conn.Read(response)
 		if err != nil {
 			fmt.Println(err)
 		}
-		fmt.Println("response", response)
-		if string(response) == "" {
+		fmt.Printf("response: %s\n", response)
+
+		if string(response) == "\r" {
 			response = []byte("0")
 		}
 
-		val, err := strconv.Atoi(string(response[6:]))
+		val, err := strconv.Atoi(string(response))
 		if err != nil {
 			fmt.Println(err)
 		}
-		fmt.Println("num", val)
 		val++
-		fmt.Println(uid)
-		fmt.Println("SET " + uid + " 1676598712 1676598712 1676598712\r\n" + string(val) + "\r\n")
+		fmt.Println("num", val)
 
-		fmt.Println(cmd)
+		fmt.Println(uid)
 
 		_, err = conn.Write([]byte("SET " + uid + " 1676598712 1676598712 1676598712\r\n" + strconv.Itoa(val) + "\r\n"))
 		if err != nil {
