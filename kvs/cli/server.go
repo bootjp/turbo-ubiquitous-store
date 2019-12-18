@@ -126,65 +126,63 @@ const (
 )
 
 func server(c net.Conn, cache *TUSCache, queue *kvs.QueueManager, stdlog *log.Logger) {
-	for {
-		bufReader := bufio.NewReader(c)
-		scanner := bufio.NewScanner(bufReader)
-		for scanner.Scan() {
-			fields := strings.Fields(scanner.Text())
-			if len(fields) == 0 {
+	bufReader := bufio.NewReader(c)
+	scanner := bufio.NewScanner(bufReader)
+	for scanner.Scan() {
+		fields := strings.Fields(scanner.Text())
+		if len(fields) == 0 {
+			continue
+		}
+
+		if debug {
+			fmt.Println(fields)
+		}
+
+		switch name := strings.ToUpper(fields[FieldsCommand]); name {
+		case "GET", "GETS":
+			if len(fields) != 2 {
+				stdlog.Printf("invalid command %v \n", fields)
 				continue
 			}
-
+			key := fields[FieldsKey]
+			val, err := cache.TUSGet(key)
+			if err != nil && err != ErrorNotfound {
+				stdlog.Println(err)
+			}
+			_, err = c.Write([]byte(fmt.Sprintf(ValueFormat, key, len(val), val)))
+			if err != nil {
+				stdlog.Println(err)
+			}
+		case "SET":
+			if len(fields) != 5 {
+				stdlog.Printf("invalid command %v \n", fields)
+				continue
+			}
+			scanner.Scan()
+			value := scanner.Text()
 			if debug {
-				fmt.Println(fields)
+				fmt.Println(value)
 			}
 
-			switch name := strings.ToUpper(fields[FieldsCommand]); name {
-			case "GET", "GETS":
-				if len(fields) != 2 {
-					stdlog.Printf("invalid command %v \n", fields)
-					continue
-				}
-				key := fields[FieldsKey]
-				val, err := cache.TUSGet(key)
-				if err != nil && err != ErrorNotfound {
-					stdlog.Println(err)
-				}
-				_, err = c.Write([]byte(fmt.Sprintf(ValueFormat, key, len(val), val)))
-				if err != nil {
-					stdlog.Println(err)
-				}
-			case "SET":
-				if len(fields) != 5 {
-					stdlog.Printf("invalid command %v \n", fields)
-					continue
-				}
-				scanner.Scan()
-				value := scanner.Text()
-				if debug {
-					fmt.Println(value)
-				}
-
-				ttl, err := strconv.Atoi(fields[FieldsTTL])
-				if err != nil {
-					stdlog.Println(err)
-				}
-
-				cache.TUSSet(fields[1], value, time.Duration(ttl)*time.Second)
-				_, err = c.Write(storedRes)
-				if err != nil {
-					stdlog.Println(err)
-				}
-				q := kvs.UpdateQueue{
-					Key:      fields[1],
-					Data:     value,
-					UpdateAt: time.Now().Unix(),
-				}
-				queue.Enqueue(q)
-			default:
-				stdlog.Println(fmt.Errorf("UnSupport command %s", name))
-				continue
+			ttl, err := strconv.Atoi(fields[FieldsTTL])
+			if err != nil {
+				stdlog.Println(err)
 			}
+
+			cache.TUSSet(fields[1], value, time.Duration(ttl)*time.Second)
+			_, err = c.Write(storedRes)
+			if err != nil {
+				stdlog.Println(err)
+			}
+			q := kvs.UpdateQueue{
+				Key:      fields[1],
+				Data:     value,
+				UpdateAt: time.Now().Unix(),
+			}
+			queue.Enqueue(q)
+		default:
+			stdlog.Println(fmt.Errorf("UnSupport command %s", name))
+			continue
 		}
 	}
 }
