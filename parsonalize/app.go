@@ -1,13 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"log"
-	"net"
 	"os"
 	"strconv"
 	"time"
 
+	"github.com/bradfitz/gomemcache/memcache"
 	"github.com/google/uuid"
 
 	"github.com/valyala/fasthttp"
@@ -15,68 +16,46 @@ import (
 
 func main() {
 
-	addr, err := net.ResolveUnixAddr("unix", "/tmp/tus.sock")
+	mc := memcache.New("/tmp/tus.sock")
+
+	m := func(ctx *fasthttp.RequestCtx) {
+		switch string(ctx.Path()) {
+		case "/inc":
+			incHandler(ctx, mc)
+		default:
+			ctx.Error("Unsupported path", fasthttp.StatusNotFound)
+		}
+
+	}
+
+	fasthttp.ListenAndServe(":7777", m)
+}
+
+func incHandler(ctx *fasthttp.RequestCtx, mc *memcache.Client) {
+	uid := handleUUID(ctx)
+
+	i, err := mc.Get(uid)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if bytes.Equal(i.Value, []byte("")) {
+		i.Value = []byte("1")
+	}
+
+	strint := fmt.Sprintf("%s", i.Value)
+	ints, err := strconv.Atoi(strint)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// todo fix blocking and refuse.
-	m := func(ctx *fasthttp.RequestCtx) {
-		uid := handleUUID(ctx)
+	ints++
+	mc.Set(&memcache.Item{Key: uid, Value: []byte(strconv.Itoa(ints)), Expiration: 0})
 
-		conn, err := net.DialUnix("unix", nil, addr)
-		defer conn.Close()
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		cmd := fmt.Sprintf("GET %s", uid)
-		fmt.Println(cmd)
-		_, err = conn.Write([]byte(cmd + "\r\n"))
-		if err != nil {
-			fmt.Println(err)
-		}
-		var meta = make([]byte, len(fmt.Sprintf("VALUE %s 0 x", uid)))
-		_, err = conn.Read(meta)
-		if err != nil {
-			fmt.Println(err)
-		}
-		fmt.Printf("meta: %s\n", meta)
-
-		var response = make([]byte, 1)
-		_, err = conn.Read(response)
-		if err != nil {
-			fmt.Println(err)
-		}
-		fmt.Printf("response: %s\n", response)
-
-		if string(response) == "\r" {
-			response = []byte("0")
-		}
-
-		val, err := strconv.Atoi(string(response))
-		if err != nil {
-			fmt.Println(err)
-		}
-		val++
-		fmt.Println("num", val)
-
-		fmt.Println(uid)
-
-		_, err = conn.Write([]byte("SET " + uid + " 1676598712 1676598712 1676598712\r\n" + strconv.Itoa(val) + "\r\n"))
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		ctx.Response.SetBody(response)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	fasthttp.ListenAndServe(":7779", m)
-
+	ctx.Response.SetBodyString(strconv.Itoa(ints))
 }
 
 func handleUUID(ctx *fasthttp.RequestCtx) string {

@@ -115,6 +115,8 @@ const ValueFormat = "VALUE %s 0 %d" + BreakLine + "%s" + BreakLine + End
 
 var storedRes = []byte(Stored)
 
+var debug = true
+
 const (
 	FieldsCommand = iota
 	FieldsKey
@@ -133,8 +135,12 @@ func server(c net.Conn, cache *TUSCache, queue *kvs.QueueManager, stdlog *log.Lo
 				continue
 			}
 
+			if debug {
+				fmt.Println(fields)
+			}
+
 			switch name := strings.ToUpper(fields[FieldsCommand]); name {
-			case "GET":
+			case "GET", "GETS":
 				if len(fields) != 2 {
 					stdlog.Printf("invalid command %v \n", fields)
 					continue
@@ -155,6 +161,10 @@ func server(c net.Conn, cache *TUSCache, queue *kvs.QueueManager, stdlog *log.Lo
 				}
 				scanner.Scan()
 				value := scanner.Text()
+				if debug {
+					fmt.Println(value)
+				}
+
 				ttl, err := strconv.Atoi(fields[FieldsTTL])
 				if err != nil {
 					stdlog.Println(err)
@@ -172,7 +182,7 @@ func server(c net.Conn, cache *TUSCache, queue *kvs.QueueManager, stdlog *log.Lo
 				}
 				queue.Enqueue(q)
 			default:
-				stdlog.Println(fmt.Errorf("UnSupport command %v", fields))
+				stdlog.Println(fmt.Errorf("UnSupport command %s", name))
 				continue
 			}
 		}
