@@ -112,8 +112,10 @@ const BreakLine = "\r\n"
 const Stored = "STORED" + BreakLine
 const End = "END" + BreakLine
 const ValueFormat = "VALUE %s 0 %d" + BreakLine + "%s" + BreakLine + End
+const Error = "ERROR" + BreakLine
 
 var storedRes = []byte(Stored)
+var errorRes = []byte(Error)
 
 var debug = true
 
@@ -153,7 +155,7 @@ func server(c net.Conn, cache *TUSCache, queue *kvs.QueueManager, stdlog *log.Lo
 			if err != nil {
 				stdlog.Println(err)
 			}
-		case "SET":
+		case "SET", "SETS":
 			if len(fields) != 5 {
 				stdlog.Printf("invalid command %v \n", fields)
 				continue
@@ -182,6 +184,10 @@ func server(c net.Conn, cache *TUSCache, queue *kvs.QueueManager, stdlog *log.Lo
 			queue.Enqueue(q)
 		default:
 			stdlog.Println(fmt.Errorf("UnSupport command %s", name))
+			_, err := c.Write(errorRes)
+			if err != nil {
+				stdlog.Println(err)
+			}
 			continue
 		}
 	}
