@@ -14,9 +14,17 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
+const DefaultTimeout = 10 * time.Second
+
 func main() {
+	p := os.Getenv("PORT")
+	name := os.Getenv("NAME")
+	if p == "" || name == "" {
+		log.Fatal("missing environment")
+	}
 
 	mc := memcache.New("/tmp/tus.sock")
+	mc.Timeout = DefaultTimeout
 
 	m := func(ctx *fasthttp.RequestCtx) {
 		switch string(ctx.Path()) {
@@ -28,7 +36,7 @@ func main() {
 
 	}
 
-	fasthttp.ListenAndServe(":7777", m)
+	fasthttp.ListenAndServe(":"+os.Getenv("PORT"), m)
 }
 
 func incHandler(ctx *fasthttp.RequestCtx, mc *memcache.Client) {
@@ -38,8 +46,8 @@ func incHandler(ctx *fasthttp.RequestCtx, mc *memcache.Client) {
 	if err != nil {
 		log.Println(err)
 	}
-	if i.Value == nil || bytes.Equal(i.Value, []byte("")) {
-		i.Value = []byte("1")
+	if i == nil || i.Value == nil || bytes.Equal(i.Value, []byte("")) {
+		i.Value = []byte("0")
 	}
 
 	strint := fmt.Sprintf("%s", i.Value)
@@ -55,11 +63,11 @@ func incHandler(ctx *fasthttp.RequestCtx, mc *memcache.Client) {
 		log.Println(err)
 	}
 
+	ctx.Response.Header.Add("NODE", os.Getenv("NAME"))
 	ctx.Response.SetBodyString(strconv.Itoa(ints))
 }
 
 func handleUUID(ctx *fasthttp.RequestCtx) string {
-	ctx.Response.SetBodyString(os.Getenv("PORT"))
 	uid := ctx.Request.Header.Cookie("uuid")
 	if uid != nil {
 		c := &fasthttp.Cookie{}
