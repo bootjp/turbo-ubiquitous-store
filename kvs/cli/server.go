@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -25,6 +26,7 @@ type TUSCache struct {
 	log         *log.Logger
 	refreshInit bool
 	refreshLock *sync.Mutex
+	update      sync.Map
 }
 
 func NewTUSCache() *TUSCache {
@@ -33,6 +35,7 @@ func NewTUSCache() *TUSCache {
 		log.New(os.Stdout, "tuscache: ", log.Ltime),
 		false,
 		&sync.Mutex{},
+		sync.Map{},
 	}
 	t.LoadCache()
 	return t
@@ -68,31 +71,50 @@ func (t *TUSCache) RefreshCache() {
 	}
 
 	t.refreshInit = true
-	go func() {
-		for {
-			sconn, err := redis.Dial("tcp", os.Getenv("SLAVE_REDIS_HOST"))
-			if err != nil {
-				t.log.Println(sconn)
-			}
+	for range time.Tick(1 * time.Minute) {
+		t.log.Println("clear cache")
+		sconn, err := redis.Dial("tcp", os.Getenv("MASTER_REDIS_HOST"))
+		if err != nil {
+			t.log.Println(sconn)
+		}
 
-			str, err := redis.Strings(sconn.Do("KEYS", "*"))
+		str, err := redis.Strings(sconn.Do("KEYS", "*"))
+		if err != nil {
+			t.log.Println(err)
+		}
+		for _, k := range str {
+			memory := &kvs.UpdateQueue{}
+			byte, err := redis.Bytes(sconn.Do("GET", k))
 			if err != nil {
 				t.log.Println(err)
 			}
-			for _, k := range str {
-				v, err := redis.String(sconn.Do("GET", k))
-				if err != nil {
-					t.log.Println(err)
-				}
-				t.TUSSet(k, v, 1*time.Hour)
+			if err := json.Unmarshal(byte, memory); err != nil {
+				t.log.Println(err)
 			}
 
-			time.Sleep(10 * time.Minute)
+			unix, ok := t.update.Load(k)
+			if !ok {
+				t.log.Printf("new value set %s %s", k, memory.Data)
+				t.TUSSet(k, memory.Data, 1*time.Hour)
+				continue
+			}
+
+			timestanp := unix.(int64)
+			if timestanp < memory.UpdateAt {
+				t.TUSSet(k, memory.Data, 1*time.Hour)
+				t.log.Printf("diff after new value set %s %s", k, memory.Data)
+			} else {
+				t.log.Printf("skipping value %s %s", k, memory.Data)
+			}
+
 		}
-	}()
+
+		sconn.Close()
+	}
 }
-func (t *TUSCache) TUSSet(key string, data string, time time.Duration) bool {
-	t.Set(key, data, time)
+func (t *TUSCache) TUSSet(key string, data string, duration time.Duration) bool {
+	t.update.Store(key, time.Now().Unix())
+	t.Set(key, data, duration)
 	return true
 }
 
@@ -232,6 +254,7 @@ func main() {
 	sigc := make(chan os.Signal, 1)
 	signal.Notify(sigc, os.Interrupt, syscall.SIGTERM)
 	cache := NewTUSCache()
+	go cache.RefreshCache()
 	queue := kvs.NewQueueManager()
 	go signalHaber(ln, sigc, queue)
 	go queue.Forward()

@@ -1,11 +1,12 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 	"os"
 	"sync"
 	"time"
+
+	jsoniter "github.com/json-iterator/go"
 
 	"github.com/bootjp/turbo-ubiquitous-store/kvs"
 	"github.com/gomodule/redigo/redis"
@@ -15,6 +16,8 @@ const (
 	NodePrimary = iota
 	NodeSecondary
 )
+
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type Node struct {
 	Conn redis.Conn
@@ -147,8 +150,12 @@ func (n *QueueNodes) Load(m *MasterNode) {
 			continue
 		}
 		data := n.Distinct(&buffer)
-		for _, v := range data {
-			_, err = m.Conn.Do("SET", v.Key, v.Data)
+		for k, v := range data {
+			json, err := json.MarshalToString(v)
+			if err != nil {
+				n.log.Println(err)
+			}
+			_, err = m.Conn.Do("SET", k, json)
 			if err != nil {
 				n.log.Println(err, v)
 			}

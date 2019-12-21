@@ -82,6 +82,8 @@ services:
       PORT: 8888
       NAME: NODE_A
       SOCK_PATH: /tmp/tus1.sock
+    depends_on:
+      - tus_1
     ports:
       - 8888:8888
     volumes:
@@ -99,6 +101,8 @@ services:
       - 8800:8888
     volumes:
       - ./mnt:/tmp
+    depends_on:
+      - tus_2
 
 
 #  zookeeper:
