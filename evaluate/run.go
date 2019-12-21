@@ -31,7 +31,7 @@ func consistentCheck(wg *sync.WaitGroup) {
 	cli := gentleman.New()
 	cli.Use(cookies.Set("uuid", uuid.New().String()))
 	cli.Use(cookies.Jar())
-	cli.Use(url.URL("http://localhost:8080/inc"))
+	cli.Use(url.URL("http://host.docker.internal:8080/inc"))
 
 	for i := 1; i < 101; i++ {
 

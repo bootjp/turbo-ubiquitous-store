@@ -28,3 +28,90 @@ services:
     ports:
       - "63791:6379"
 
+  distinct_executor:
+    build:
+      ./distinct_executor
+    depends_on:
+      - queue_primary
+      - queue_secondary
+      - master_kvs
+      - slave_kvs
+
+    environment:
+      PRIMARY_REDIS_HOST: host.docker.internal:63790
+      SECONDARY_REDIS_HOST: host.docker.internal:63791
+      MASTER_REDIS_HOST: host.docker.internal:6379
+      SLAVE_REDIS_HOST: host.docker.internal:6380
+
+  tus_1:
+    build:
+      ./kvs/cli
+    environment:
+      PRIMARY_REDIS_HOST: host.docker.internal:63790
+      SECONDARY_REDIS_HOST: host.docker.internal:63791
+      MASTER_REDIS_HOST: host.docker.internal:6379
+      SLAVE_REDIS_HOST: host.docker.internal:6380
+      SOCK_PATH: /tmp/tus1.sock
+    volumes:
+      - ./mnt:/tmp
+    depends_on:
+      - slave_kvs
+      - master_kvs
+
+
+  tus_2:
+    build:
+      ./kvs/cli
+    environment:
+      PRIMARY_REDIS_HOST: host.docker.internal:63790
+      SECONDARY_REDIS_HOST: host.docker.internal:63791
+      MASTER_REDIS_HOST: host.docker.internal:6379
+      SLAVE_REDIS_HOST: host.docker.internal:6380
+      SOCK_PATH: /tmp/tus2.sock
+    volumes:
+      - ./mnt:/tmp
+    depends_on:
+      - slave_kvs
+      - master_kvs
+
+
+  app_1:
+    build:
+      ./parsonalize/memcached
+    environment:
+      PORT: 8888
+      NAME: NODE_A
+      SOCK_PATH: /tmp/tus1.sock
+    ports:
+      - 8888:8888
+    volumes:
+      - ./mnt:/tmp
+
+
+  app_2:
+    build:
+      ./parsonalize/memcached
+    environment:
+      PORT: 8888
+      NAME: NODE_B
+      SOCK_PATH: /tmp/tus2.sock
+    ports:
+      - 8800:8888
+    volumes:
+      - ./mnt:/tmp
+
+
+#  zookeeper:
+#    image: wurstmeister/zookeeper
+#    ports:
+#      - "2181"
+#  kafka:
+#    build: .
+#    ports:
+#      - "9092"
+#    environment:
+#      KAFKA_ADVERTISED_HOST_NAME: 192.168.100.93
+#      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+#    volumes:
+#      - /var/run/docker.sock:/var/run/docker.sock
+

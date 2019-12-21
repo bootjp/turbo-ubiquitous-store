@@ -10,7 +10,7 @@ export SLAVE_REDIS_HOST=localhost:6380
 #env PORT=8800 go run parsonalize/app.go &
 #p2=$!
 
-#go run distinct_executor/cli/main.go &
+go run distinct_executor/cli/main.go &
 #PID=$!
 go run kvs/cli/server.go
 kill $PID

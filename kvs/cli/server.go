@@ -215,13 +215,17 @@ const sockPath = "/tmp/tus.sock"
 func main() {
 	stdlog := log.New(os.Stdout, "front_kvs: ", log.Ltime)
 
-	ln, err := net.Listen("unix", sockPath)
+	envSockPath := os.Getenv("SOCK_PATH")
+	if envSockPath == "" {
+		envSockPath = sockPath
+	}
+	ln, err := net.Listen("unix", envSockPath)
 	if err != nil {
 		stdlog.Fatalln(err)
 	}
-	defer os.Remove(sockPath)
+	defer os.Remove(envSockPath)
 
-	if err := os.Chmod(sockPath, 0700); err != nil {
+	if err := os.Chmod(envSockPath, 0700); err != nil {
 		log.Printf("error: %v\n", err)
 		return
 	}

@@ -19,11 +19,12 @@ const DefaultTimeout = 10 * time.Second
 func main() {
 	p := os.Getenv("PORT")
 	name := os.Getenv("NAME")
+	sock := os.Getenv("SOCK_PATH")
 	if p == "" || name == "" {
 		log.Fatal("missing environment")
 	}
 
-	mc := memcache.New("/tmp/tus.sock")
+	mc := memcache.New(sock)
 	mc.Timeout = DefaultTimeout
 
 	m := func(ctx *fasthttp.RequestCtx) {
@@ -36,7 +37,7 @@ func main() {
 
 	}
 
-	fasthttp.ListenAndServe(":"+os.Getenv("PORT"), m)
+	fasthttp.ListenAndServe(":"+p, m)
 }
 
 func incHandler(ctx *fasthttp.RequestCtx, mc *memcache.Client) {
