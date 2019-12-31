@@ -37,11 +37,11 @@ func consistentCheck(wg *sync.WaitGroup) {
 
 		res, err := cli.Request().Send()
 		if err != nil {
-			fmt.Printf("Request error: %s\n", err)
+			log.Fatalf("Request error: %s\n", err)
 			return
 		}
 		if !res.Ok {
-			fmt.Printf("Invalid server response: %d\n", res.StatusCode)
+			log.Fatalf("Invalid server response: %d\n", res.StatusCode)
 			return
 		}
 
@@ -49,7 +49,6 @@ func consistentCheck(wg *sync.WaitGroup) {
 		if res.String() != strconv.Itoa(i) {
 			log.Fatalf("missing response %s : %s", res.String(), strconv.Itoa(i))
 		}
-		log.Println("--")
 	}
 
 	wg.Done()

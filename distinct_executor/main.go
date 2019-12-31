@@ -131,6 +131,11 @@ func (n *QueueNodes) Load(m *MasterNode) {
 			n.log.Println(err)
 			n.DetachNode(n.ActiveNode)
 		}
+		if qcount == 0 {
+			n.log.Println("distinct executor waiting queue")
+			continue
+		}
+
 		for qcount > 0 {
 			memory := &kvs.UpdateQueue{}
 			byte, err := redis.Bytes(n.ActiveNode.Conn.Do("RPOP", updateQueueKey))
@@ -146,7 +151,6 @@ func (n *QueueNodes) Load(m *MasterNode) {
 		}
 
 		if len(buffer) == 0 {
-			n.log.Println("distinct executor waiting queue")
 			continue
 		}
 		data := n.Distinct(&buffer)
