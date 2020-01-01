@@ -23,8 +23,6 @@ func main() {
 		//log.Fatal("missing environment")
 	}
 
-	//mc := memcache.New("/tmp/tus.sock")
-	//mc.Timeout = DefaultTimeout
 	cluster, err := redis.NewCluster(
 		&redis.Options{
 			StartNodes:   []string{"127.0.0.1:7000", "127.0.0.1:7001", "127.0.0.1:7002"},

@@ -77,7 +77,7 @@ services:
 
   app_1:
     build:
-      ./parsonalize/memcached
+      ./parsonalize/fech_latency
     environment:
       PORT: 8888
       NAME: NODE_A
@@ -92,7 +92,7 @@ services:
 
   app_2:
     build:
-      ./parsonalize/memcached
+      ./parsonalize/fech_latency
     environment:
       PORT: 8888
       NAME: NODE_B
