@@ -32,8 +32,17 @@ func main() {
 	mc.Timeout = DefaultTimeout
 
 	rdb := redis.NewClusterClient(&redis.ClusterOptions{
-		Addrs: []string{"172.17.0.1:7000", "172.17.0.1:7001", "172.17.0.1:7002"},
+		Addrs:       []string{"192.168.0.20:7000", "192.168.0.20:7001", "192.168.0.20:7002"},
+		MaxRetries:  3,
+		ReadTimeout: 5 * time.Second,
 	})
+	_, err := rdb.Ping().Result()
+	if err != nil {
+
+		log.Println("redis ping")
+
+		log.Fatalln(err)
+	}
 
 	m := func(ctx *fasthttp.RequestCtx) {
 		switch string(ctx.Path()) {
@@ -66,6 +75,7 @@ func latencyTus(ctx *fasthttp.RequestCtx, mc *memcache.Client) {
 	strint := fmt.Sprintf("%s", i.Value)
 	ints, err := strconv.Atoi(strint)
 	if err != nil {
+
 		log.Fatalln(err)
 	}
 
@@ -73,10 +83,12 @@ func latencyTus(ctx *fasthttp.RequestCtx, mc *memcache.Client) {
 
 	start = time.Now()
 	err = mc.Set(&memcache.Item{Key: uid, Value: []byte(strconv.Itoa(ints)), Expiration: 0})
-	fmt.Println(result)
+	result += time.Now().Sub(start)
 	if err != nil {
 		log.Fatalln(err)
 	}
+
+	log.Printf("%d\n", result)
 
 	ctx.Response.Header.Add("NODE", os.Getenv("NAME"))
 	ctx.Response.SetBodyString(strconv.Itoa(ints))
@@ -87,8 +99,12 @@ func latencyRedis(ctx *fasthttp.RequestCtx, rd *redis.ClusterClient) {
 	start := time.Now()
 	res, err := rd.Get(uid).Result()
 	result := time.Now().Sub(start)
+	if err != nil && err != redis.Nil {
+		log.Println("redis fetch")
+		log.Fatalln(err)
+	}
 
-	if res == "" {
+	if err == redis.Nil {
 		res = "0"
 	}
 
@@ -101,11 +117,11 @@ func latencyRedis(ctx *fasthttp.RequestCtx, rd *redis.ClusterClient) {
 	start = time.Now()
 	_, err = rd.Set(uid, ints, 0).Result()
 	result += time.Now().Sub(start)
-
-	fmt.Println(result)
 	if err != nil {
-		log.Println(err)
+		log.Fatalln(err)
 	}
+
+	log.Printf("%d\n", result)
 
 	ctx.Response.Header.Add("NODE", os.Getenv("NAME"))
 	ctx.Response.SetBodyString(strconv.Itoa(ints))

@@ -13,7 +13,7 @@ import (
 	"gopkg.in/h2non/gentleman.v2/plugins/url"
 )
 
-const parallelCount = 10
+const parallelCount = 2
 
 func main() {
 
@@ -30,9 +30,9 @@ func consistentCheck(wg *sync.WaitGroup) {
 	cli := gentleman.New()
 	cli.Use(cookies.Set("uuid", uuid.New().String()))
 	cli.Use(cookies.Jar())
-	cli.Use(url.URL("http://localhost:8080/latency_tus"))
+	cli.Use(url.URL("http://localhost:8888/latency_tus"))
 
-	for i := 1; i < 101; i++ {
+	for i := 1; i < 10; i++ {
 
 		res, err := cli.Request().Send()
 		if err != nil {
@@ -53,8 +53,8 @@ func consistentCheck(wg *sync.WaitGroup) {
 	cli = gentleman.New()
 	cli.Use(cookies.Set("uuid", uuid.New().String()))
 	cli.Use(cookies.Jar())
-	cli.Use(url.URL("http://localhost:8080/latency_redis"))
-	for i := 1; i < 101; i++ {
+	cli.Use(url.URL("http://localhost:8800/latency_redis"))
+	for i := 1; i < 10; i++ {
 
 		res, err := cli.Request().Send()
 		if err != nil {

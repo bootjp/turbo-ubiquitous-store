@@ -139,7 +139,7 @@ const Error = "ERROR" + BreakLine
 var storedRes = []byte(Stored)
 var errorRes = []byte(Error)
 
-var debug = true
+var debug = false
 
 const (
 	FieldsCommand = iota
@@ -158,9 +158,9 @@ func server(c net.Conn, cache *TUSCache, queue *kvs.QueueManager, stdlog *log.Lo
 			continue
 		}
 
-		if debug {
-			fmt.Println(fields)
-		}
+		//if debug {
+		//	fmt.Println(fields)
+		//}
 
 		switch name := strings.ToUpper(fields[FieldsCommand]); name {
 		case "GET", "GETS":
@@ -184,9 +184,9 @@ func server(c net.Conn, cache *TUSCache, queue *kvs.QueueManager, stdlog *log.Lo
 			}
 			scanner.Scan()
 			value := scanner.Text()
-			if debug {
-				fmt.Println(value)
-			}
+			//if debug {
+			//	fmt.Println(value)
+			//}
 
 			ttl, err := strconv.Atoi(fields[FieldsTTL])
 			if err != nil {
