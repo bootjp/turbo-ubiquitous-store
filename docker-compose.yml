@@ -38,19 +38,19 @@ services:
       - slave_kvs
 
     environment:
-      PRIMARY_REDIS_HOST: host.docker.internal:63790
-      SECONDARY_REDIS_HOST: host.docker.internal:63791
-      MASTER_REDIS_HOST: host.docker.internal:6379
-      SLAVE_REDIS_HOST: host.docker.internal:6380
+      PRIMARY_REDIS_HOST: 172.17.0.1:63790
+      SECONDARY_REDIS_HOST: 172.17.0.1:63791
+      MASTER_REDIS_HOST: 172.17.0.1:6379
+      SLAVE_REDIS_HOST: 172.17.0.1:6380
 
   tus_1:
     build:
       ./kvs/cli
     environment:
-      PRIMARY_REDIS_HOST: host.docker.internal:63790
-      SECONDARY_REDIS_HOST: host.docker.internal:63791
-      MASTER_REDIS_HOST: host.docker.internal:6379
-      SLAVE_REDIS_HOST: host.docker.internal:6380
+      PRIMARY_REDIS_HOST: 172.17.0.1:63790
+      SECONDARY_REDIS_HOST: 172.17.0.1:63791
+      MASTER_REDIS_HOST: 172.17.0.1:6379
+      SLAVE_REDIS_HOST: 172.17.0.1:6380
       SOCK_PATH: /tmp/tus1.sock
     volumes:
       - ./mnt:/tmp
@@ -63,10 +63,10 @@ services:
     build:
       ./kvs/cli
     environment:
-      PRIMARY_REDIS_HOST: host.docker.internal:63790
-      SECONDARY_REDIS_HOST: host.docker.internal:63791
-      MASTER_REDIS_HOST: host.docker.internal:6379
-      SLAVE_REDIS_HOST: host.docker.internal:6380
+      PRIMARY_REDIS_HOST: 172.17.0.1:63790
+      SECONDARY_REDIS_HOST: 172.17.0.1:63791
+      MASTER_REDIS_HOST: 172.17.0.1:6379
+      SLAVE_REDIS_HOST: 172.17.0.1:6380
       SOCK_PATH: /tmp/tus2.sock
     volumes:
       - ./mnt:/tmp
