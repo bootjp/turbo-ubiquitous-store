@@ -247,7 +247,7 @@ func main() {
 	}
 	defer os.Remove(envSockPath)
 
-	if err := os.Chmod(envSockPath, 0700); err != nil {
+	if err := os.Chmod(envSockPath, 0777); err != nil {
 		log.Printf("error: %v\n", err)
 		return
 	}
